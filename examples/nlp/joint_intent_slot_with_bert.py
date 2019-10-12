@@ -6,7 +6,7 @@ import numpy as np
 from pytorch_transformers import BertTokenizer
 
 import nemo
-from nemo.utils.lr_policies import get_lr_policy
+from nemo.utils.lr_policies import get_lr_policy_fn
 
 import nemo_nlp
 from nemo_nlp.data.datasets.utils import JointIntentSlotDataDesc
@@ -174,9 +174,9 @@ ckpt_callback = nemo.core.CheckpointCallback(
     epoch_freq=args.save_epoch_freq,
     step_freq=args.save_step_freq)
 
-lr_policy_fn = get_lr_policy(args.lr_policy,
-                             total_steps=args.num_epochs * steps_per_epoch,
-                             warmup_ratio=args.lr_warmup_proportion)
+lr_policy_fn = get_lr_policy_fn(args.lr_policy,
+                                total_steps=args.num_epochs * steps_per_epoch,
+                                warmup_ratio=args.lr_warmup_proportion)
 
 nf.train(tensors_to_optimize=[train_loss],
          callbacks=[train_callback, eval_callback, ckpt_callback],

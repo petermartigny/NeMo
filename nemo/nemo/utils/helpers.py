@@ -126,26 +126,24 @@ def maybe_download_from_cloud(url, filename, logger=None) -> str:
         nfname = ".nemo_files"
         # check if ~/.nemo_files exists, if not - create
         home_folder = Path.home()
-        nf_absname = os.path.join(home_folder, nfname)
-        if not os.path.exists(nf_absname):
-            os.mkdir(nf_absname)
+        nf_absname = home_folder / nfname
+        nf_absname.mkdir(exist_ok=True, parents=True)
         # check if thing is already downloaded and unpacked
+        name = filename
         if filename.endswith('.tar.gz'):
             name = filename[:-7]
-        else:
-            name = filename
-        destination = os.path.join(nf_absname, name)
-        if os.path.exists(destination):
+
+        destination = nf_absname / name
+        if destination.exists():
             return str(destination)
         # download file
         wget.download(url + name + ".tar.gz", str(nf_absname))
         tf = tarfile.open(os.path.join(nf_absname, name + ".tar.gz"))
         tf.extractall(nf_absname)
-        if os.path.exists(destination):
-            return destination
-        else:
-            return ""
-    except (FileNotFoundError, ConnectionError, OSError):
-        if logger is not None:
+        return destination if destination.exists() else ""
+
+    except (FileNotFoundError, ConnectionError, OSError) as e:
+        if logger:
             logger.info(f"Could not obtain {filename} from the cloud")
+            logger.info(f"Reason: {e}")
         return ""

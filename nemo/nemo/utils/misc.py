@@ -1,7 +1,7 @@
 from collections import UserDict
 
 
-def pad_to(x, k=8):
+def pad_to(x: int, k=8) -> int:
     """Pad int value up to divisor of k.
 
     Examples:

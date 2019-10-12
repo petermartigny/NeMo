@@ -3,7 +3,7 @@ import argparse
 
 class NemoArgParser(argparse.ArgumentParser):
     """
-    This is a wrapper about argparse.
+    This is a wrapper around argparse.
 
     Usage is the same as standard argparse.ArgParser:
         parser = NemoArgParser(description='Model_name')
@@ -42,7 +42,7 @@ class NemoArgParser(argparse.ArgumentParser):
         self.add_argument("--train_dataset", type=str, default=None,
                           help="training dataset path")
         self.add_argument("--eval_datasets", type=str, nargs="*",
-                          help="evaludation datasets paths")
+                          help="evaluation datasets paths")
         self.add_argument("--batch_size", type=int,
                           help="train batch size per GPU")
         self.add_argument("--eval_batch_size", type=int,

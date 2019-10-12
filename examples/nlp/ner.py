@@ -5,7 +5,7 @@ import os
 
 
 import nemo
-from nemo.utils.lr_policies import get_lr_policy
+from nemo.utils.lr_policies import get_lr_policy_fn
 
 import nemo_nlp
 from nemo_nlp import NemoBertTokenizer, SentencePieceTokenizer
@@ -139,9 +139,9 @@ ckpt_callback = nemo.core.CheckpointCallback(
     step_freq=args.save_step_freq)
 
 
-lr_policy_fn = get_lr_policy(args.lr_policy,
-                             total_steps=args.num_epochs * steps_per_epoch,
-                             warmup_ratio=args.lr_warmup_proportion)
+lr_policy_fn = get_lr_policy_fn(args.lr_policy,
+                                total_steps=args.num_epochs * steps_per_epoch,
+                                warmup_ratio=args.lr_warmup_proportion)
 
 
 nf.train(tensors_to_optimize=[train_loss],

@@ -5,7 +5,7 @@ import argparse
 import os
 
 import nemo
-from nemo.utils.lr_policies import get_lr_policy
+from nemo.utils.lr_policies import get_lr_policy_fn
 
 import nemo_nlp
 from nemo_nlp.data.datasets.utils import BERTPretrainingDataDesc
@@ -148,9 +148,9 @@ ckpt_callback = nemo.core.CheckpointCallback(folder=nf.checkpoint_dir,
                                              step_freq=args.save_step_freq)
 
 # define learning rate decay policy
-lr_policy_fn = get_lr_policy(args.lr_policy,
-                             total_steps=args.num_epochs * steps_per_epoch,
-                             warmup_ratio=args.lr_warmup_proportion)
+lr_policy_fn = get_lr_policy_fn(args.lr_policy,
+                                total_steps=args.num_epochs * steps_per_epoch,
+                                warmup_ratio=args.lr_warmup_proportion)
 
 config_path = f'{nf.checkpoint_dir}/bert-config.json'
 if not os.path.exists(config_path):

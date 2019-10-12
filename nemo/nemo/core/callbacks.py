@@ -1,21 +1,21 @@
 # Copyright (c) 2019 NVIDIA Corporation
-from abc import ABC, abstractmethod
-from collections import namedtuple
 import glob
-import math
 import os
 import sys
 import time
+from abc import ABC, abstractmethod
+from collections import namedtuple
+from typing import List
 
-from ..utils.exp_logging import get_logger
+from .neural_modules import NeuralModule
 from ..utils import get_checkpoint_from_dir
+from ..utils.exp_logging import get_logger
 
-
-logger = get_logger('')
+logger = get_logger(__name__)
 
 
 class ActionCallback(ABC):
-    """Abstract interface for callbacks.
+    """Abstract interface for action callbacks.
     """
 
     def __init__(self):
@@ -70,7 +70,7 @@ class ModuleSaverCallback(ActionCallback):
     When step_freq = -1, don't save anything.
     """
 
-    def __init__(self, save_modules_list, step_freq=1000, folder=None):
+    def __init__(self, save_modules_list: List[NeuralModule], step_freq: int=1000, folder=None):
         super().__init__()
         self._save_modules_list = save_modules_list
         self._folder = folder
@@ -89,13 +89,10 @@ class ModuleSaverCallback(ActionCallback):
                 class_name = m.__class__.__name__
                 uid = m.unique_instance_id
                 fn = "{0}_{1}-STEP-{2}.pt".format(class_name, uid, step)
-                if self._folder is None:
-                    file_name = fn
-                else:
-                    file_name = os.path.join(self._folder, fn)
-                print(f"Saving module {class_name} in {file_name}")
+                file_name = os.path.join(self._folder, fn) if self._folder else fn
+                logger.info(f"Saving module {class_name} in {file_name}")
                 m.save_to(file_name)
-                print("Saved.")
+                logger.info("Saved.")
 
     def on_action_end(self):
         step = self.step
@@ -104,13 +101,10 @@ class ModuleSaverCallback(ActionCallback):
                 class_name = m.__class__.__name__
                 uid = m.unique_instance_id
                 fn = "{0}_{1}-STEP-{2}.pt".format(class_name, uid, step)
-                if self._folder is None:
-                    file_name = fn
-                else:
-                    file_name = os.path.join(self._folder, fn)
-                print(f"Saving module {class_name} in {file_name}")
+                file_name = os.path.join(self._folder, fn) if self._folder else fn
+                logger.info(f"Saving module {class_name} in {file_name}")
                 m.save_to(file_name)
-                print("Saved.")
+                logger.info("Saved.")
 
 
 class SimpleLossLoggerCallback(ActionCallback):
@@ -135,30 +129,30 @@ class SimpleLossLoggerCallback(ActionCallback):
         self._last_iter_start = None
 
     @property
-    def tensors(self):
+    def tensors(self) -> List:
         return self._tensors
 
     def on_action_start(self):
         if self.local_rank is None or self.local_rank == 0:
-            print("Starting .....")
+            logger.info("Starting .....")
             self._start_time = time.time()
 
     def on_action_end(self):
         if self.local_rank is None or self.local_rank == 0:
             if self._swriter is not None:
                 self._swriter.close()
-            print(f"Done in {time.time() - self._start_time}")
+            logger.info(f"Done in {time.time() - self._start_time}")
 
     def on_epoch_start(self):
         if self.local_rank is None or self.local_rank == 0:
-            print(f"Starting epoch {self.epoch_num}")
+            logger.info(f"Starting epoch {self.epoch_num}")
             self._last_epoch_start = time.time()
 
     def on_epoch_end(self):
         if self.local_rank is None or self.local_rank == 0:
             step = self.step
             run_time = time.time() - self._last_epoch_start
-            print(f"Finished epoch {self.epoch_num} in {run_time}")
+            logger.info(f"Finished epoch {self.epoch_num} in {run_time}")
             if self._swriter is not None:
                 value = self.epoch_num
                 self._swriter.add_scalar('misc/epoch', value, step)
@@ -178,7 +172,7 @@ class SimpleLossLoggerCallback(ActionCallback):
                     for t in self.tensors
                 ]
 
-                print(f"Step: {step}")
+                logger.info(f"Step: {step}")
                 if self._print_func:
                     self._print_func(tensor_values)
                 sys.stdout.flush()
@@ -191,7 +185,7 @@ class SimpleLossLoggerCallback(ActionCallback):
                     run_time = time.time() - self._last_iter_start
                     self._swriter.add_scalar('misc/step_time', run_time, step)
                 run_time = time.time() - self._last_iter_start
-                print(f"Step time: {run_time} seconds")
+                logger.info(f"Step time: {run_time} seconds")
 
 
 class CheckpointCallback(ActionCallback):
@@ -224,7 +218,7 @@ class CheckpointCallback(ActionCallback):
 
     def __save_to(self, path):
         if not os.path.isdir(path):
-            print("Creating {0} folder".format(path))
+            logger.info("Creating {0} folder".format(path))
             os.makedirs(path, exist_ok=True)
         unique_mod_names = set()
         for module in self.action.modules:
@@ -283,8 +277,8 @@ class CheckpointCallback(ActionCallback):
                     raise ValueError(
                         "force_load was set to True for checkpoint callback"
                         "but a checkpoint was not found.")
-                print(e)
-                print(
+                logger.info(e)
+                logger.info(
                     "Checkpoint folder {0} present but did not restore".format(
                         path))
                 return
@@ -295,8 +289,8 @@ class CheckpointCallback(ActionCallback):
                 for tr, checkpoint in zip([self.action], trainer_checkpoints):
                     tr.restore_state_from(checkpoint)
             except (BaseException, ValueError) as e:
-                print(e)
-                print("Trainer state wasn't restored".format(
+                logger.info(e)
+                logger.info("Trainer state wasn't restored".format(
                     path))
                 return
 
@@ -381,17 +375,17 @@ class EvaluatorCallback(ActionCallback):
             self.action._eval(self._eval_tensors, self, step)
             elapsed_time = time.time() - start_time
             if self.local_rank == 0 or self.local_rank is None:
-                print(f'Evaluation time: {elapsed_time} seconds')
+                logger.info(f'Evaluation time: {elapsed_time} seconds')
 
     def on_action_end(self):
         step = self.step
         if self.local_rank == 0 or self.local_rank is None:
-            print('Final Evaluation ' + '.' * 30)
+            logger.info('Final Evaluation ' + '.' * 30)
         start_time = time.time()
         self.action._eval(self._eval_tensors, self, step)
         elapsed_time = time.time() - start_time
         if self.local_rank == 0 or self.local_rank is None:
-            print(f'Evaluation time: {elapsed_time} seconds')
+            logger.info(f'Evaluation time: {elapsed_time} seconds')
 
     def clear_global_var_dict(self):
         self._global_var_dict = {}
@@ -433,6 +427,7 @@ class _Method(ABC):
     """ Classes inherited from _Method are used for
     ValueSetterCallback below
     """
+
     @abstractmethod
     def __call__(self, step, total_steps):
         pass

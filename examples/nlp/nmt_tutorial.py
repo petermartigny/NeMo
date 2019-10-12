@@ -6,7 +6,7 @@ neural-machine-translation.html#translation-with-pretrained-model
 import torch
 
 import nemo
-from nemo.utils.lr_policies import get_lr_policy
+from nemo.utils.lr_policies import get_lr_policy_fn
 
 import nemo_nlp
 from nemo_nlp.utils.callbacks.translation import \
@@ -199,9 +199,9 @@ if not args.interactive:
     callbacks.extend([train_callback, eval_callback])
 
 # define learning rate decay policy
-lr_policy_fn = get_lr_policy(args.lr_policy,
-                             total_steps=args.max_steps,
-                             warmup_steps=args.warmup_steps)
+lr_policy_fn = get_lr_policy_fn(args.lr_policy,
+                                total_steps=args.max_steps,
+                                warmup_steps=args.warmup_steps)
 
 nf.train(tensors_to_optimize=[train_loss],
          callbacks=callbacks,
